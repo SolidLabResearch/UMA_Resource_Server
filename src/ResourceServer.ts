@@ -46,18 +46,42 @@ export class ResourceServer {
 
     public async getResource(req: Request, res: Response): Promise<void> {
         const resourceURI = this.baseUrl + req.url.trim()
+        const asUmaConfig = await this.authServerUmaConfig
 
-        if (req.header('Authorization')) {
-            
+        const authHeader = req.header('Authorization')
+        if (authHeader) {
+            console.log(`Resource ${resourceURI} requested with Authentication header: ${authHeader}`)
             // todo: verify access token
+            const token = authHeader.split("Bearer")[1].trim()
+
+            const introspection_endpoint = asUmaConfig.introspection_endpoint
+            console.log('introspection_endpoint', introspection_endpoint)
+
+            try {
+                const res = await this.fetcher.fetch(introspection_endpoint, {
+                    method: 'POST',
+                    headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'Accept': 'application/json',
+                    },
+                    body: `token_type_hint=access_token&token=${token}`,
+                });
+                
+                const introspectionResponse = await res.json()
+                console.log('Introspection check successful')
+                console.log(JSON.stringify(introspectionResponse, null, 2))
+
+                if (!introspectionResponse.active) throw new Error('Could not verify access token with introspection response.')
+            } catch (e) {
+                throw new Error(`Could not verify access token: ${e}`)
+            }
         
             const resource = this.resources.get(resourceURI);
-            res.send(resource || "Resource not found")
+            res.send(resource || "Resource not found in Resource Server Storage")
             console.log(`Resource returned from ${resourceURI}`)
 
         } else {
             // Find UMA token endpoint
-            const asUmaConfig = await this.authServerUmaConfig
             const permission_endpoint = asUmaConfig.permission_endpoint
             console.log('permission_endpoint', permission_endpoint)
 
