@@ -55,7 +55,6 @@ export class ResourceServer {
             const token = authHeader.split("Bearer")[1].trim()
 
             const introspection_endpoint = asUmaConfig.introspection_endpoint
-            console.log('introspection_endpoint', introspection_endpoint)
 
             try {
                 const res = await this.fetcher.fetch(introspection_endpoint, {
