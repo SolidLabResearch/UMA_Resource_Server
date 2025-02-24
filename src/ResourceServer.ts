@@ -32,19 +32,21 @@ export class ResourceServer {
 
     public async start(): Promise<void> {
         this.app.get('/.well-known/jwks.json', (req, res) => { this.getJWKSConfig(req, res) })
-        this.app.get('/*', (req, res) => { this.getResource(req, res) })
-        this.app.post('/*',(req, res) => { this.postResource(req, res) })
+        this.app.get('*', (req, res) => { this.getResource(req, res) })
+        this.app.post('*',(req, res) => { this.postResource(req, res) })
         this.app.listen(this.port, () => {
             console.log(`Resource server started on port ${this.port}`);   
         })
     }
 
     public async getJWKSConfig(req: Request, res: Response): Promise<void> {
+        console.log('Serving JWKS config')
         const key = await this.keyGen.getPublicKey();
         res.json({ keys: [ Object.assign(key, { kid: 'TODO' }) ] })
     }
 
     public async getResource(req: Request, res: Response): Promise<void> {
+        console.log(`Received GET request for ${req.url}`)
         const resourceURI = this.baseUrl + req.url.trim()
         const asUmaConfig = await this.authServerUmaConfig
 
